@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en-IE">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bright Future Calculator</title>
+  <style>
+    :root{
+      --primary:#56DC96;
+      --primary-dark:#45c582;
+      --bg:#F8FAFC;
+      --card:#FFFFFF;
+      --text:#1F2937;
+      --muted:#6B7280;
+      --border:#E5E7EB;
+      --shadow:0 10px 30px rgba(15,23,42,.08);
+      --radius:16px;
+      --radius-sm:12px;
+      --ring:0 0 0 3px rgba(86,220,150,.22);
+    }
+    [data-theme="dark"]{
+      --bg:#121212;
+      --card:#1E1E1E;
+      --text:#FFFFFF;
+      --muted:#A3A3A3;
+      --border:#2C2C2C;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%}
+    body{
+      font-family:Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      transition:background .25s ease,color .25s ease;
+    }
+
+    .app-header{
+      position:sticky; top:0; z-index:20;
+      background:color-mix(in srgb, var(--card) 92%, transparent);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+      padding:18px 22px;
+    }
+    .header-inner{
+      max-width:1400px; margin:0 auto;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:14px; min-width:0;
+    }
+    .logo-wrap{
+      width:58px; height:58px; border-radius:16px; overflow:hidden;
+      background:#fff; border:1px solid var(--border); box-shadow:var(--shadow);
+      display:flex; align-items:center; justify-content:center;
+      flex:0 0 auto;
+    }
+    .logo-wrap img{width:100%; height:100%; object-fit:contain; display:block}
+    .brand-text h1{
+      margin:0; font-size:1.45rem; line-height:1.1; letter-spacing:-.02em;
+    }
+    .brand-text .date{margin-top:6px; color:var(--muted); font-size:.92rem}
+    .top-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+    .switch{
+      display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.92rem;
+      user-select:none;
+    }
+    .switch input{display:none}
+    .toggle{
+      width:52px; height:30px; border-radius:999px; background:var(--border); position:relative;
+      transition:.25s ease; flex:0 0 auto; cursor:pointer;
+    }
+    .toggle::after{
+      content:""; position:absolute; inset:3px auto auto 3px; width:24px; height:24px;
+      border-radius:50%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15);
+      transition:.25s ease;
+    }
+    .switch input:checked + .toggle{background:var(--primary)}
+    .switch input:checked + .toggle::after{transform:translateX(22px)}
+
+    .container{
+      max-width:1400px; margin:0 auto; padding:22px;
+      display:grid; grid-template-columns:1.05fr .95fr; gap:22px;
+    }
+    @media (max-width: 980px){ .container{grid-template-columns:1fr} }
+    .card{
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:22px;
+    }
+    .section-title{
+      margin:0 0 18px; font-size:1.05rem; letter-spacing:-.01em;
+      display:flex; align-items:center; gap:10px;
+    }
+    .section-title::before{
+      content:""; width:10px; height:10px; border-radius:50%; background:var(--primary);
+      box-shadow:0 0 0 5px rgba(86,220,150,.14);
+    }
+
+    .grid{display:grid; gap:16px}
+    .field label{
+      display:block; margin:0 0 8px; font-size:.92rem; font-weight:600;
+    }
+    .select, .input{
+      width:100%; border:1px solid var(--border); background:color-mix(in srgb, var(--bg) 78%, var(--card));
+      color:var(--text); border-radius:12px; padding:14px 14px;
+      font-size:1rem; outline:none; transition:.2s ease;
+    }
+    .select:focus, .input:focus{border-color:var(--primary); box-shadow:var(--ring)}
+    .input[type="number"]::-webkit-outer-spin-button,
+    .input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    .input[type="number"]{appearance:textfield}
+
+    .option-row{
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:14px 15px; border:1px solid var(--border); border-radius:12px;
+      background:color-mix(in srgb, var(--bg) 72%, var(--card));
+      transition:.2s ease; cursor:pointer;
+    }
+    .option-row:hover{border-color:var(--primary)}
+    .option-left{display:flex; align-items:center; gap:12px}
+    .check{
+      width:22px; height:22px; border-radius:7px; border:2px solid var(--border);
+      display:inline-flex; align-items:center; justify-content:center; transition:.2s ease;
+      flex:0 0 auto;
+    }
+    .check::after{content:"✓"; opacity:0; color:#fff; font-size:14px; font-weight:800}
+    .option-row.active .check{background:var(--primary); border-color:var(--primary)}
+    .option-row.active .check::after{opacity:1}
+    .small{color:var(--muted); font-size:.9rem}
+
+    .hidden{
+      max-height:0; opacity:0; overflow:hidden; transition:max-height .28s ease, opacity .2s ease, margin-top .28s ease;
+      margin-top:0;
+    }
+    .hidden.show{max-height:260px; opacity:1; margin-top:12px}
+
+    .addons{
+      display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:12px;
+    }
+    .addon{
+      display:flex; gap:12px; align-items:flex-start; padding:14px; border-radius:12px;
+      border:1px solid var(--border); background:color-mix(in srgb, var(--bg) 74%, var(--card));
+      cursor:pointer; transition:.2s ease;
+    }
+    .addon:hover{border-color:var(--primary); transform:translateY(-1px)}
+    .addon .name{font-weight:600}
+    .addon .price{color:var(--muted); font-size:.9rem; margin-top:4px}
+
+    .summary-list{display:grid; gap:10px}
+    .summary-item{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:20px;
+      padding:12px 0; border-bottom:1px solid var(--border);
+    }
+    .summary-item:last-child{border-bottom:0}
+    .summary-item .label{color:var(--muted)}
+    .summary-item .value{font-weight:700; text-align:right}
+    .subitems{margin-top:6px; display:grid; gap:6px}
+    .subitems .mini{
+      display:flex; justify-content:space-between; gap:16px; color:var(--muted); font-size:.92rem;
+      padding-left:12px;
+    }
+
+    .total-card{
+      margin-top:18px; padding:18px; border-radius:16px; background:var(--primary);
+      color:#fff; box-shadow:0 16px 35px rgba(86,220,150,.30);
+    }
+    .total-card .cap{font-size:.88rem; letter-spacing:.08em; opacity:.92; font-weight:800}
+    .total-card .amt{font-size:2.2rem; line-height:1; margin-top:10px; font-weight:900}
+    .total-card .note{opacity:.95; margin-top:8px; font-size:.92rem}
+
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;
+    }
+    .btn{
+      border:0; border-radius:12px; padding:13px 16px; font-weight:700; cursor:pointer;
+      transition:.2s ease; flex:1 1 160px;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{background:var(--primary); color:#fff}
+    .btn-secondary{background:color-mix(in srgb, var(--bg) 80%, var(--card)); color:var(--text); border:1px solid var(--border)}
+    .btn-outline{background:transparent; color:var(--primary); border:1px solid var(--primary)}
+    .btn-outline:hover{background:var(--primary); color:#fff}
+    .print-hide{display:inherit}
+
+    .fade-update{animation:fadePulse .45s ease}
+    @keyframes fadePulse{0%{opacity:.4; transform:translateY(1px)}100%{opacity:1; transform:none}}
+
+    @media (max-width: 640px){
+      .header-inner{align-items:flex-start; flex-direction:column}
+      .brand-text h1{font-size:1.2rem}
+      .total-card .amt{font-size:1.8rem}
+      .container{padding:14px}
+      .card{padding:18px}
+      .actions{flex-direction:column}
+      .btn{flex:1 1 auto}
+    }
+
+    @media print{
+      body{background:#fff}
+      .app-header,.print-hide{display:none !important}
+      .container{padding:0; max-width:none; grid-template-columns:1fr}
+      .card{box-shadow:none; border:1px solid #ddd}
+      .total-card{break-inside:avoid}
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo-wrap">
+          <img src="BRIGHT-FUTURE-SOLAR-LOGO_power-green.jpg" alt="Bright Future Solar logo" />
+        </div>
+        <div class="brand-text">
+          <h1>Bright Future Calculator</h1>
+          <div class="date" id="todayDate"></div>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <label class="switch" title="Dark Mode">
+          <input id="themeToggle" type="checkbox" />
+          <span class="toggle"></span>
+          <span>Dark Mode</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2 class="section-title">Quote Configuration</h2>
+
+      <div class="grid">
+        <div class="field">
+          <label for="panelSelect">Number of Panels</label>
+          <select id="panelSelect" class="select">
+            <option value="">Select panel quantity</option>
+          </select>
+        </div>
+
+        <div class="option-row" id="batteryToggle">
+          <div class="option-left">
+            <span class="check"></span>
+            <div>
+              <div style="font-weight:700">Add Battery</div>
+              <div class="small">Optional battery storage</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hidden" id="batterySection">
+          <div class="grid">
+            <div class="field">
+              <label for="batteryBrand">Battery Brand</label>
+              <select id="batteryBrand" class="select">
+                <option value="sigenergy">Sigenergy</option>
+                <option value="huawei">Huawei</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="batterySize">Battery Size</label>
+              <select id="batterySize" class="select"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="option-row" id="groundToggle">
+          <div class="option-left">
+            <span class="check"></span>
+            <div>
+              <div style="font-weight:700">Ground Mount Required</div>
+              <div class="small">€60 per panel</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="optimizerQty">Number of Optimizers</label>
+          <input id="optimizerQty" class="input" type="number" min="0" value="0" />
+        </div>
+
+        <div>
+          <h2 class="section-title" style="margin-top:8px">Additional Options</h2>
+          <div class="addons" id="addonsGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h2 class="section-title">Live Quote Summary</h2>
+
+      <div class="summary-list">
+        <div class="summary-item">
+          <div class="label">Solar System</div>
+          <div class="value" id="solarValue">€0</div>
+        </div>
+
+        <div class="summary-item" id="batteryLine" style="display:none">
+          <div class="label">Battery</div>
+          <div class="value" id="batteryValue">€0</div>
+        </div>
+
+        <div class="summary-item" id="groundLine" style="display:none">
+          <div class="label">Ground Mount</div>
+          <div class="value" id="groundValue">€0</div>
+        </div>
+
+        <div class="summary-item" id="optimizerLine" style="display:none">
+          <div class="label">Optimizers</div>
+          <div class="value" id="optimizerValue">€0</div>
+        </div>
+
+        <div class="summary-item" id="addonsLine" style="display:none; flex-direction:column; align-items:stretch">
+          <div class="label">Additional Options</div>
+          <div class="subitems" id="addonsList"></div>
+        </div>
+
+        <div class="summary-item">
+          <div class="label" style="font-weight:800; color:var(--text)">Subtotal</div>
+          <div class="value" id="subtotalValue">€0</div>
+        </div>
+      </div>
+
+      <div class="total-card">
+        <div class="cap">TOTAL QUOTE</div>
+        <div class="amt fade-update" id="totalValue">€0</div>
+        <div class="note">Automatic live calculation</div>
+      </div>
+
+      <div class="actions print-hide">
+        <button class="btn btn-secondary" id="resetBtn">Reset Calculator</button>
+        <button class="btn btn-outline" id="copyBtn">Copy Quote</button>
+        <button class="btn btn-primary" id="printBtn">Print Quote</button>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const pricing = {
+      solarPackages: {
+        5: 5154, 6: 5654, 7: 6154, 8: 6654, 9: 6800, 10: 6850, 11: 7100, 12: 7350,
+        13: 7600, 14: 7850, 15: 8100, 16: 8350, 17: 8600, 18: 8850, 19: 9100, 20: 9350,
+        21: 9600, 22: 9850, 23: 10100, 24: 10350
+      },
+      batteries: {
+        sigenergy: { 6: 2600, 9: 3800, 12: 5000, 15: 6200, 18: 7400, 21: 8600 },
+        huawei: { 5: 3500, 7: 4500, 10: 5950, 14: 7930, 15: 8350, 21: 11220 }
+      },
+      addons: {
+        "East / West Extra Shunt": 200,
+        "Zappi Car Charger": 1810,
+        "3 Story Scaffold": 850,
+        "Three Phase Inverter": 700,
+        "BER Certificate": 300,
+        "EDDI Hot Water Diverter": 780,
+        "Smart Guard (Switchover)": 1900
+      },
+      groundMountPerPanel: 60,
+      optimizerPrice: 75
+    };
+
+    const money = new Intl.NumberFormat('en-IE', { style:'currency', currency:'EUR' });
+
+    const state = {
+      panels: null,
+      batteryOn: false,
+      batteryBrand: 'sigenergy',
+      batterySize: null,
+      groundOn: false,
+      optimizers: 0,
+      addons: new Set(['BER Certificate'])
+    };
+
+    const el = {
+      todayDate: document.getElementById('todayDate'),
+      themeToggle: document.getElementById('themeToggle'),
+      panelSelect: document.getElementById('panelSelect'),
+      batteryToggle: document.getElementById('batteryToggle'),
+      batterySection: document.getElementById('batterySection'),
+      batteryBrand: document.getElementById('batteryBrand'),
+      batterySize: document.getElementById('batterySize'),
+      groundToggle: document.getElementById('groundToggle'),
+      optimizerQty: document.getElementById('optimizerQty'),
+      addonsGrid: document.getElementById('addonsGrid'),
+      solarValue: document.getElementById('solarValue'),
+      batteryLine: document.getElementById('batteryLine'),
+      batteryValue: document.getElementById('batteryValue'),
+      groundLine: document.getElementById('groundLine'),
+      groundValue: document.getElementById('groundValue'),
+      optimizerLine: document.getElementById('optimizerLine'),
+      optimizerValue: document.getElementById('optimizerValue'),
+      addonsLine: document.getElementById('addonsLine'),
+      addonsList: document.getElementById('addonsList'),
+      subtotalValue: document.getElementById('subtotalValue'),
+      totalValue: document.getElementById('totalValue'),
+      resetBtn: document.getElementById('resetBtn'),
+      copyBtn: document.getElementById('copyBtn'),
+      printBtn: document.getElementById('printBtn')
+    };
+
+    function setToday(){
+      el.todayDate.textContent = new Date().toLocaleDateString('en-IE', {
+        weekday:'long', year:'numeric', month:'long', day:'numeric'
+      });
+    }
+
+    function fillPanels(){
+      for(let p=5;p<=24;p++){
+        const o = document.createElement('option');
+        o.value = p;
+        o.textContent = `${p} panels`;
+        el.panelSelect.appendChild(o);
+      }
+    }
+
+    function fillBatterySizes(){
+      const brand = el.batteryBrand.value;
+      const sizes = pricing.batteries[brand];
+      el.batterySize.innerHTML = '';
+      Object.entries(sizes).forEach(([size, price], idx) => {
+        const o = document.createElement('option');
+        o.value = size;
+        o.textContent = `${size} kWh — ${money.format(price)}`;
+        el.batterySize.appendChild(o);
+        if (idx === 0) o.selected = true;
+      });
+      state.batterySize = parseInt(el.batterySize.value || '0', 10) || null;
+    }
+
+    function fillAddons(){
+      el.addonsGrid.innerHTML = '';
+      Object.entries(pricing.addons).forEach(([name, price]) => {
+        const row = document.createElement('div');
+        row.className = 'addon' + (state.addons.has(name) ? ' active' : '');
+        row.dataset.name = name;
+        row.innerHTML = `
+          <span class="check"></span>
+          <div>
+            <div class="name">${name}</div>
+            <div class="price">${money.format(price)}</div>
+          </div>
+        `;
+        row.addEventListener('click', () => {
+          if (name === 'BER Certificate') return;
+          state.addons.has(name) ? state.addons.delete(name) : state.addons.add(name);
+          row.classList.toggle('active');
+          updateQuote();
+        });
+        el.addonsGrid.appendChild(row);
+      });
+      const ber = el.addonsGrid.querySelector('[data-name="BER Certificate"]');
+      if (ber) ber.classList.add('active');
+    }
+
+    function toggleRow(row, active){
+      row.classList.toggle('active', active);
+    }
+
+    function animateValue(node){
+      node.classList.remove('fade-update');
+      void node.offsetWidth;
+      node.classList.add('fade-update');
+    }
+
+    function updateQuote(){
+      state.panels = el.panelSelect.value ? parseInt(el.panelSelect.value,10) : null;
+      state.batteryBrand = el.batteryBrand.value;
+      state.batterySize = el.batterySection.classList.contains('show') ? parseInt(el.batterySize.value,10) : null;
+      state.optimizers = Math.max(0, parseInt(el.optimizerQty.value || '0',10) || 0);
+
+      const solar = state.panels ? pricing.solarPackages[state.panels] : 0;
+      const battery = state.batteryOn && state.batterySize ? pricing.batteries[state.batteryBrand][state.batterySize] : 0;
+      const ground = state.groundOn && state.panels ? state.panels * pricing.groundMountPerPanel : 0;
+      const optimizers = state.optimizers * pricing.optimizerPrice;
+
+      let addonTotal = 0;
+      const selectedAddons = [];
+      [...state.addons].forEach(name => {
+        addonTotal += pricing.addons[name] || 0;
+        selectedAddons.push({ name, price: pricing.addons[name] || 0 });
+      });
+
+      const subtotal = solar + battery + ground + optimizers + addonTotal;
+
+      el.solarValue.textContent = money.format(solar);
+      animateValue(el.solarValue);
+
+      el.batteryLine.style.display = state.batteryOn && state.batterySize ? 'flex' : 'none';
+      el.batteryValue.textContent = money.format(battery);
+
+      el.groundLine.style.display = state.groundOn && state.panels ? 'flex' : 'none';
+      el.groundValue.textContent = money.format(ground);
+
+      el.optimizerLine.style.display = state.optimizers > 0 ? 'flex' : 'none';
+      el.optimizerValue.textContent = `${state.optimizers} (${money.format(optimizers)})`;
+
+      el.addonsLine.style.display = selectedAddons.length ? 'flex' : 'none';
+      el.addonsList.innerHTML = '';
+      selectedAddons.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'mini';
+        div.innerHTML = `<span>${a.name}</span><span>${money.format(a.price)}</span>`;
+        el.addonsList.appendChild(div);
+      });
+
+      el.subtotalValue.textContent = money.format(subtotal);
+      el.totalValue.textContent = money.format(subtotal);
+      animateValue(el.subtotalValue);
+      animateValue(el.totalValue);
+    }
+
+    function resetCalculator(){
+      el.panelSelect.value = '';
+      state.panels = null;
+
+      state.batteryOn = false;
+      el.batteryToggle.classList.remove('active');
+      el.batterySection.classList.remove('show');
+
+      el.batteryBrand.value = 'sigenergy';
+      fillBatterySizes();
+
+      state.groundOn = false;
+      el.groundToggle.classList.remove('active');
+
+      el.optimizerQty.value = 0;
+      state.optimizers = 0;
+
+      state.addons = new Set(['BER Certificate']);
+      fillAddons();
+      updateQuote();
+    }
+
+    function copyQuote(){
+      const panels = state.panels || 0;
+      const solar = state.panels ? pricing.solarPackages[state.panels] : 0;
+      const battery = state.batteryOn && state.batterySize ? pricing.batteries[state.batteryBrand][state.batterySize] : 0;
+      const ground = state.groundOn && state.panels ? state.panels * pricing.groundMountPerPanel : 0;
+      const optimizers = state.optimizers * pricing.optimizerPrice;
+
+      const addonLines = [...state.addons].map(name => `${name} (${money.format(pricing.addons[name] || 0)})`);
+      const addonText = addonLines.length ? addonLines.join('\n') : 'None';
+
+      const total = solar + battery + ground + optimizers + [...state.addons].reduce((s,n)=>s+(pricing.addons[n]||0),0);
+
+      const text = [
+        'Bright Future Calculator',
+        `Panels: ${panels} (${money.format(solar)})`,
+        `Battery: ${state.batteryOn && state.batterySize ? `${state.batteryBrand === 'sigenergy' ? 'Sigenergy' : 'Huawei'} ${state.batterySize}kWh (${money.format(battery)})` : 'None'}`,
+        `Ground Mount: ${money.format(ground)}`,
+        `Optimizers: ${state.optimizers} (${money.format(optimizers)})`,
+        `Add-ons:\n${addonText}`,
+        `Total: ${money.format(total)}`
+      ].join('\n');
+
+      navigator.clipboard.writeText(text).then(() => {
+        const old = el.copyBtn.textContent;
+        el.copyBtn.textContent = 'Copied!';
+        setTimeout(() => el.copyBtn.textContent = old, 1400);
+      });
+    }
+
+    function printQuote(){ window.print(); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setToday();
+      fillPanels();
+      fillBatterySizes();
+      fillAddons();
+
+      el.themeToggle.checked = false;
+
+      el.panelSelect.addEventListener('change', updateQuote);
+      el.batteryBrand.addEventListener('change', () => { fillBatterySizes(); updateQuote(); });
+      el.batterySize.addEventListener('change', updateQuote);
+      el.optimizerQty.addEventListener('input', () => {
+        if (el.optimizerQty.value === '') el.optimizerQty.value = '0';
+        el.optimizerQty.value = Math.max(0, parseInt(el.optimizerQty.value || '0',10) || 0);
+        updateQuote();
+      });
+
+      el.batteryToggle.addEventListener('click', () => {
+        state.batteryOn = !state.batteryOn;
+        el.batteryToggle.classList.toggle('active', state.batteryOn);
+        el.batterySection.classList.toggle('show', state.batteryOn);
+        if (state.batteryOn && !el.batterySize.value) fillBatterySizes();
+        updateQuote();
+      });
+
+      el.groundToggle.addEventListener('click', () => {
+        state.groundOn = !state.groundOn;
+        el.groundToggle.classList.toggle('active', state.groundOn);
+        updateQuote();
+      });
+
+      el.resetBtn.addEventListener('click', resetCalculator);
+      el.copyBtn.addEventListener('click', copyQuote);
+      el.printBtn.addEventListener('click', printQuote);
+
+      el.themeToggle.addEventListener('change', () => {
+        document.body.toggleAttribute('data-theme', el.themeToggle.checked);
+        if (el.themeToggle.checked) document.body.setAttribute('data-theme', 'dark');
+        else document.body.removeAttribute('data-theme');
+      });
+
+      updateQuote();
+    });
+  </script>
+</body>
+</html>
